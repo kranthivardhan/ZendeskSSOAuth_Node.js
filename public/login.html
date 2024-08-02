@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSO Authentication</title>
+    <link rel="stylesheet" type="text/css" href="./style.css">
+
+</head>
+<body>
+    <h1>capsystems</h1>
+    <div id="form-container">
+        <form id="user-login-form" >
+            <label for="username">Username</label>
+            <input type="text" name="username" id="input-username">
+            <label for="password">Password</label>
+            <input type="password" name="password" id="input-password">
+            <button type="submit">Submit</button>
+        </form>
+
+        <form id="hidden-form" action="https://capsystems.zendesk.com/access/jwt" method="post">
+            <input type="hidden" id="jwt" name="jwt">
+            <input type="hidden" id="return_to" name="return_to">
+        </form>
+        
+    </div>
+    <p class="error-text">Login failed!</p>
+</body>
+<script>
+const loginForm = document.getElementById('user-login-form')
+const jwtHiddenForm = document.forms['hidden-form']
+const jwtField = document.getElementById("jwt")
+const returnToField = document.getElementById("return_to")
+
+
+const handleLogin = async (event) => {
+    debugger;
+    event.preventDefault()
+    const [username, password] = Array.from(document.querySelectorAll('input')).map(e => e.value)
+    console.log("Login attempt", username, password)
+    const response = await fetch('http://localhost:8080/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            username: username,
+            password: password
+        })
+    })
+    const responseJson = await response.json()
+    if (responseJson.error){
+        document.querySelector(".error-text").classList.toggle("show-text")
+        return
+    }
+    document.querySelector(".error-text").classList.remove("show-text")
+
+    //after successful login, receive token from server side
+    const {token} = responseJson
+    console.log("Json Web Token", token)
+    
+    jwtField.value = token
+    returnToField.value = "http://localhost:8080/home"
+
+    //the submission of the hidden form with the jwt and return_to url is the final step for user authentication in Zendesk.
+    jwtHiddenForm.submit();
+
+}
+loginForm.addEventListener('submit', handleLogin)
+    
+</script>
+</html>
